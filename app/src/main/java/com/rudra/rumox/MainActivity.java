@@ -14,7 +14,6 @@ import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
-import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -36,7 +35,6 @@ public class MainActivity extends AppCompatActivity {
     private boolean alwaysListenMode = false;
     private Handler handler = new Handler();
 
-    private static final int PERMISSIONS_REQUEST = 100;
     private static final String[] PERMISSIONS = {
         Manifest.permission.RECORD_AUDIO,
         Manifest.permission.CALL_PHONE,
@@ -55,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
         btnMic = findViewById(R.id.btnMic);
         btnAlwaysListen = findViewById(R.id.btnAlwaysListen);
 
-        requestPermissions();
+        ActivityCompat.requestPermissions(this, PERMISSIONS, 100);
         initTTS();
         initSpeechRecognizer();
 
@@ -67,84 +65,71 @@ public class MainActivity extends AppCompatActivity {
         btnAlwaysListen.setOnClickListener(v -> {
             alwaysListenMode = !alwaysListenMode;
             if (alwaysListenMode) {
-                btnAlwaysListen.setText("🔴 Stop Always Listen");
-                btnAlwaysListen.setBackgroundTintList(
-                    android.content.res.ColorStateList.valueOf(0xFFFF4444));
+                btnAlwaysListen.setText("STOP LISTENING");
                 tvStatus.setText("Always Listen Mode ON");
-                speak("Always listen mode activated. I'm always here, boss.");
+                respond("Always listen mode activated. I'm always here, boss.");
                 startListening();
             } else {
-                btnAlwaysListen.setText("👂 Always Listen");
-                btnAlwaysListen.setBackgroundTintList(
-                    android.content.res.ColorStateList.valueOf(0xFF00E5FF));
-                tvStatus.setText("Always Listen Mode OFF");
+                btnAlwaysListen.setText("ALWAYS LISTEN");
+                tvStatus.setText("Ready");
                 stopListening();
-                speak("Always listen mode deactivated.");
+                respond("Always listen mode deactivated.");
             }
         });
 
-        speak("RUMOX online. How can I help you, boss?");
+        respond("RUMOX online. How can I help you, boss?");
     }
 
     private void initTTS() {
         tts = new TextToSpeech(this, status -> {
             if (status == TextToSpeech.SUCCESS) {
                 tts.setLanguage(Locale.US);
-                tts.setPitch(0.9f);
+                tts.setPitch(0.85f);
                 tts.setSpeechRate(1.0f);
             }
         });
     }
 
-    private void speak(String text) {
+    private void respond(String text) {
         tvAssistantResponse.setText("RUMOX: " + text);
-        if (tts != null) {
-            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
-        }
+        if (tts != null) tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
     }
 
     private void initSpeechRecognizer() {
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
         speechRecognizer.setRecognitionListener(new RecognitionListener() {
             @Override public void onReadyForSpeech(Bundle p) {
-                tvStatus.setText("🎤 Listening...");
-                btnMic.setText("⏹ Stop");
+                tvStatus.setText("Listening...");
+                btnMic.setText("STOP");
                 isListening = true;
             }
             @Override public void onBeginningOfSpeech() {}
             @Override public void onRmsChanged(float v) {}
             @Override public void onBufferReceived(byte[] b) {}
             @Override public void onEndOfSpeech() {
-                btnMic.setText("🎤 Speak");
+                btnMic.setText("SPEAK");
                 isListening = false;
-                tvStatus.setText("Processing...");
             }
             @Override public void onError(int error) {
-                btnMic.setText("🎤 Speak");
+                btnMic.setText("SPEAK");
                 isListening = false;
                 tvStatus.setText("Ready");
-                if (alwaysListenMode) {
-                    handler.postDelayed(() -> startListening(), 1000);
-                }
+                if (alwaysListenMode) handler.postDelayed(() -> startListening(), 1500);
             }
             @Override public void onResults(Bundle results) {
-                ArrayList<String> matches = results.getStringArrayList(
-                    SpeechRecognizer.RESULTS_RECOGNITION);
+                ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 if (matches != null && !matches.isEmpty()) {
-                    String command = matches.get(0);
-                    tvUserSpeech.setText("You: " + command);
-                    handleCommand(command.toLowerCase().trim());
+                    String cmd = matches.get(0);
+                    tvUserSpeech.setText("You: " + cmd);
+                    handleCommand(cmd.toLowerCase().trim());
                 }
-                btnMic.setText("🎤 Speak");
+                btnMic.setText("SPEAK");
                 isListening = false;
                 tvStatus.setText("Ready");
-                if (alwaysListenMode) {
-                    handler.postDelayed(() -> startListening(), 2000);
-                }
+                if (alwaysListenMode) handler.postDelayed(() -> startListening(), 2000);
             }
             @Override public void onPartialResults(Bundle partial) {
-                ArrayList<String> p = partial.getStringArrayList(
-                    SpeechRecognizer.RESULTS_RECOGNITION);
+                ArrayList<String> p = partial.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
                 if (p != null && !p.isEmpty()) tvUserSpeech.setText("You: " + p.get(0));
             }
             @Override public void onEvent(int e, Bundle b) {}
@@ -152,64 +137,132 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void handleCommand(String cmd) {
-        // === APP OPENING ===
-        if (cmd.contains("whatsapp")) {
-            openApp("com.whatsapp"); speak("Opening WhatsApp, boss.");
-        } else if (cmd.contains("instagram")) {
-            openApp("com.instagram.android"); speak("Opening Instagram.");
-        } else if (cmd.contains("spotify")) {
-            openApp("com.spotify.music"); speak("Opening Spotify.");
-        } else if (cmd.contains("youtube")) {
-            openApp("com.google.android.youtube"); speak("Opening YouTube.");
-        } else if (cmd.contains("camera")) {
-            startActivity(new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE));
-            speak("Opening camera. Say cheese!");
-        } else if (cmd.contains("settings")) {
+
+        // === WHATSAPP ===
+        if (cmd.contains("whatsapp") || cmd.contains("whats") || cmd.contains(" wa ")) {
+            if (cmd.contains("message") || cmd.contains("send")) {
+                handleWhatsAppMessage(cmd);
+            } else {
+                openApp("com.whatsapp", "WhatsApp");
+            }
+        }
+        // === INSTAGRAM ===
+        else if (cmd.contains("instagram") || cmd.contains("insta") || cmd.contains(" ig ")) {
+            openApp("com.instagram.android", "Instagram");
+        }
+        // === YOUTUBE ===
+        else if (cmd.contains("youtube") || cmd.contains(" yt ")) {
+            openApp("com.google.android.youtube", "YouTube");
+        }
+        // === SPOTIFY ===
+        else if (cmd.contains("spotify") || (cmd.contains("play") && cmd.contains("music"))) {
+            if (cmd.contains("play") && !cmd.contains("open")) {
+                String song = cmd.replace("play", "").replace("on spotify", "")
+                               .replace("spotify", "").trim();
+                playOnSpotify(song);
+            } else {
+                openApp("com.spotify.music", "Spotify");
+            }
+        }
+        // === SNAPCHAT ===
+        else if (cmd.contains("snapchat") || cmd.contains("snap")) {
+            openApp("com.snapchat.android", "Snapchat");
+        }
+        // === CAMERA ===
+        else if (cmd.contains("camera") || cmd.contains("cam")) {
+            try {
+                Intent i = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+                startActivity(i);
+                respond("Opening camera. Say cheese, boss!");
+            } catch (Exception e) {
+                openApp("com.android.camera", "Camera");
+            }
+        }
+        // === SETTINGS ===
+        else if (cmd.contains("settings")) {
             startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS));
-            speak("Opening settings.");
-        } else if (cmd.contains("calculator")) {
-            openApp("com.google.android.calculator"); speak("Opening calculator.");
-        } else if (cmd.contains("snapchat")) {
-            openApp("com.snapchat.android"); speak("Opening Snapchat.");
-        } else if (cmd.contains("claude")) {
-            openApp("com.anthropic.claude"); speak("Opening Claude AI.");
-        } else if (cmd.contains("chatgpt") || cmd.contains("gpt")) {
-            openApp("com.openai.chatgpt"); speak("Opening ChatGPT.");
-        } else if (cmd.contains("google") && !cmd.contains("search")) {
-            openApp("com.google.android.googlequicksearchbox"); speak("Opening Google.");
-        } else if (cmd.contains("comet")) {
-            openApp("com.comet.app"); speak("Opening Comet.");
-        } else if (cmd.contains("telegram")) {
-            openApp("org.telegram.messenger"); speak("Opening Telegram.");
-        } else if (cmd.contains("netflix")) {
-            openApp("com.netflix.mediaclient"); speak("Opening Netflix.");
-        } else if (cmd.contains("play store")) {
-            openApp("com.android.vending"); speak("Opening Play Store.");
-        } else if (cmd.contains("gmail")) {
-            openApp("com.google.android.gm"); speak("Opening Gmail.");
-        } else if (cmd.contains("maps")) {
-            openApp("com.google.android.apps.maps"); speak("Opening Maps.");
+            respond("Opening settings for you.");
+        }
+        // === CALCULATOR ===
+        else if (cmd.contains("calculator") || cmd.contains("calc")) {
+            if (!openAppSilent("com.google.android.calculator"))
+                if (!openAppSilent("com.android.calculator2"))
+                    openApp("com.miui.calculator", "Calculator");
+            respond("Opening calculator.");
+        }
+        // === CLAUDE AI ===
+        else if (cmd.contains("claude")) {
+            if (!openAppSilent("com.anthropic.claude"))
+                openApp("com.anthropic.claudeai", "Claude AI");
+            respond("Opening Claude AI.");
+        }
+        // === CHATGPT ===
+        else if (cmd.contains("chatgpt") || cmd.contains("gpt") || cmd.contains("ai chat")) {
+            if (!openAppSilent("com.openai.chatgpt"))
+                openApp("com.openai.chatgpt", "ChatGPT");
+            respond("Opening ChatGPT.");
+        }
+        // === GOOGLE ===
+        else if (cmd.contains("open google") || cmd.contains("google search")) {
+            if (!openAppSilent("com.google.android.googlequicksearchbox"))
+                openApp("com.google.android.gm", "Google");
+            respond("Opening Google.");
+        }
+        // === COMET ===
+        else if (cmd.contains("comet")) {
+            openApp("com.cometapp.comet", "Comet");
+        }
+        // === TELEGRAM ===
+        else if (cmd.contains("telegram")) {
+            openApp("org.telegram.messenger", "Telegram");
+        }
+        // === NETFLIX ===
+        else if (cmd.contains("netflix")) {
+            openApp("com.netflix.mediaclient", "Netflix");
+        }
+        // === GMAIL ===
+        else if (cmd.contains("gmail")) {
+            openApp("com.google.android.gm", "Gmail");
+        }
+        // === MAPS ===
+        else if (cmd.contains("maps") || cmd.contains("navigation")) {
+            openApp("com.google.android.apps.maps", "Google Maps");
+        }
+        // === PLAY STORE ===
+        else if (cmd.contains("play store")) {
+            openApp("com.android.vending", "Play Store");
         }
 
-        // === PHONE CALLS ===
-        else if (cmd.contains("call ")) {
-            String contact = cmd.replace("call", "").trim();
-            makeCall(contact);
+        // === CALLS ===
+        else if (cmd.contains("call ") || cmd.startsWith("call")) {
+            String contact = cmd.replaceAll("(?i)(call to|call|please|now)", "").trim();
+            if (!contact.isEmpty()) makeCall(contact);
+            else respond("Who should I call, boss?");
         }
 
-        // === MESSAGING ===
-        else if (cmd.contains("send whatsapp message to") || cmd.contains("whatsapp message to")) {
-            handleWhatsAppMessage(cmd);
-        } else if (cmd.contains("send message to")) {
+        // === ANSWER CALL ===
+        else if (cmd.contains("answer") || cmd.contains("pick up") || cmd.contains("accept call")) {
+            respond("Answering the call!");
+            Intent i = new Intent(Intent.ACTION_MEDIA_BUTTON);
+            i.putExtra(Intent.EXTRA_KEY_EVENT,
+                new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN,
+                    android.view.KeyEvent.KEYCODE_HEADSETHOOK));
+            sendOrderedBroadcast(i, null);
+        }
+
+        // === REJECT CALL ===
+        else if (cmd.contains("reject") || cmd.contains("hang up") || cmd.contains("decline")) {
+            respond("Call rejected.");
+            Intent i = new Intent(Intent.ACTION_MEDIA_BUTTON);
+            i.putExtra(Intent.EXTRA_KEY_EVENT,
+                new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN,
+                    android.view.KeyEvent.KEYCODE_HEADSETHOOK));
+            sendOrderedBroadcast(i, null);
+        }
+
+        // === SEND SMS ===
+        else if (cmd.contains("send message to")) {
             handleSMS(cmd);
-        }
-
-        // === MUSIC ===
-        else if (cmd.contains("play") && cmd.contains("spotify")) {
-            String song = cmd.replace("play", "").replace("on spotify", "").replace("spotify", "").trim();
-            playOnSpotify(song);
-        } else if (cmd.contains("play music")) {
-            openApp("com.spotify.music"); speak("Playing music on Spotify.");
         }
 
         // === SEARCH ===
@@ -218,174 +271,199 @@ public class MainActivity extends AppCompatActivity {
             Intent i = new Intent(Intent.ACTION_VIEW,
                 Uri.parse("https://www.google.com/search?q=" + Uri.encode(query)));
             startActivity(i);
-            speak("Searching for " + query);
+            respond("Searching for " + query + " on Google.");
         }
 
-        // === TIME & DATE ===
-        else if (cmd.contains("what time") || cmd.contains("current time")) {
+        // === TIME ===
+        else if (cmd.contains("time") || cmd.contains("what time")) {
             String time = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date());
-            speak("It's " + time + ", boss.");
-        } else if (cmd.contains("what") && cmd.contains("date") || cmd.contains("today's date")) {
-            String date = new SimpleDateFormat("EEEE, MMMM d yyyy", Locale.getDefault()).format(new Date());
-            speak("Today is " + date);
+            respond("It's " + time + " boss.");
         }
 
-        // === REMINDERS ===
-        else if (cmd.contains("set a reminder") || cmd.contains("remind me")) {
-            speak("Setting a reminder for you, boss.");
+        // === DATE ===
+        else if (cmd.contains("date") || cmd.contains("today")) {
+            String date = new SimpleDateFormat("EEEE, MMMM d yyyy", Locale.getDefault()).format(new Date());
+            respond("Today is " + date);
+        }
+
+        // === REMINDER ===
+        else if (cmd.contains("reminder") || cmd.contains("remind me")) {
             Intent i = new Intent(AlarmClock.ACTION_SET_ALARM);
             i.putExtra(AlarmClock.EXTRA_MESSAGE, cmd);
             i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(i);
+            respond("Setting a reminder for you, boss.");
         }
 
-        // === NOTES ===
-        else if (cmd.contains("take a note") || cmd.contains("note")) {
+        // === NOTE ===
+        else if (cmd.contains("note") || cmd.contains("take a note")) {
             String note = cmd.replace("take a note", "").replace("note", "").trim();
-            speak("Note saved: " + note);
+            respond("Got it! Note saved: " + note);
             Toast.makeText(this, "Note: " + note, Toast.LENGTH_LONG).show();
         }
 
-        // === JARVIS RESPONSES ===
-        else if (cmd.contains("hello") || cmd.contains("hi")) {
-            speak("Hello boss! Ready to assist you.");
-        } else if (cmd.contains("how are you")) {
-            speak("I'm fully operational and ready to serve, boss!");
-        } else if (cmd.contains("your name") || cmd.contains("who are you")) {
-            speak("I am RUMOX, your personal AI assistant. At your service.");
-        } else if (cmd.contains("joke")) {
-            speak("Why don't scientists trust atoms? Because they make up everything! Just like my confidence.");
-        } else if (cmd.contains("thank")) {
-            speak("Always a pleasure, boss.");
-        } else if (cmd.contains("bye") || cmd.contains("goodbye")) {
-            speak("Goodbye boss. RUMOX standing by.");
+        // === GREETINGS ===
+        else if (cmd.contains("hello") || cmd.contains("hi") || cmd.contains("hey")) {
+            respond("Hey boss! RUMOX is ready. What can I do for you?");
+        }
+        else if (cmd.contains("how are you")) {
+            respond("Fully operational and ready to serve, boss!");
+        }
+        else if (cmd.contains("who are you") || cmd.contains("your name")) {
+            respond("I am RUMOX, your personal AI assistant. Built to serve, boss.");
+        }
+        else if (cmd.contains("joke")) {
+            respond("Why don't scientists trust atoms? Because they make up everything! Just like my confidence, boss.");
+        }
+        else if (cmd.contains("thank")) {
+            respond("Always a pleasure, boss. That's what I'm here for.");
+        }
+        else if (cmd.contains("bye") || cmd.contains("goodbye")) {
+            respond("Goodbye boss. RUMOX standing by whenever you need me.");
+        }
+        else if (cmd.contains("what can you do") || cmd.contains("help")) {
+            respond("I can open apps, make calls, send messages, play music, tell time, set reminders and much more. Just ask, boss!");
         }
 
         // === UNKNOWN ===
         else {
-            speak("I heard you say: " + cmd + ". I'm still learning that command, boss.");
+            respond("I heard: " + cmd + ". I'm not sure how to help with that yet, boss. Try saying open WhatsApp or call someone.");
         }
     }
 
-    private void openApp(String pkg) {
+    private void openApp(String pkg, String name) {
         try {
             Intent i = getPackageManager().getLaunchIntentForPackage(pkg);
-            if (i != null) startActivity(i);
-            else speak("That app is not installed on your phone, boss.");
+            if (i != null) {
+                startActivity(i);
+                respond("Opening " + name + " for you!");
+            } else {
+                respond(name + " is not installed. Want me to search the Play Store?");
+            }
         } catch (Exception e) {
-            speak("Couldn't open that app.");
+            respond("Couldn't open " + name + ".");
         }
+    }
+
+    private boolean openAppSilent(String pkg) {
+        try {
+            Intent i = getPackageManager().getLaunchIntentForPackage(pkg);
+            if (i != null) { startActivity(i); return true; }
+        } catch (Exception ignored) {}
+        return false;
     }
 
     private void makeCall(String contactName) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
-                != PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
                 != PackageManager.PERMISSION_GRANTED) {
-            speak("I need permission to make calls.");
+            respond("I need call permission to do that.");
             return;
         }
         String number = getContactNumber(contactName);
         if (number != null) {
-            speak("Calling " + contactName);
-            Intent i = new Intent(Intent.ACTION_CALL, Uri.parse("tel:" + number));
-            startActivity(i);
+            respond("Calling " + contactName + " now!");
+            startActivity(new Intent(Intent.ACTION_CALL, Uri.parse("tel:" + number)));
         } else {
-            speak("I couldn't find " + contactName + " in your contacts.");
+            respond("I couldn't find " + contactName + " in your contacts, boss.");
         }
     }
 
     private String getContactNumber(String name) {
-        ContentResolver cr = getContentResolver();
-        Cursor cursor = cr.query(ContactsContract.Contacts.CONTENT_URI, null,
-            ContactsContract.Contacts.DISPLAY_NAME + " LIKE ?",
-            new String[]{"%" + name + "%"}, null);
-        if (cursor != null && cursor.moveToFirst()) {
-            String id = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-            cursor.close();
-            Cursor phones = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
-                ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + id, null, null);
-            if (phones != null && phones.moveToFirst()) {
-                String number = phones.getString(
-                    phones.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                phones.close();
-                return number;
+        try {
+            ContentResolver cr = getContentResolver();
+            Cursor cursor = cr.query(ContactsContract.Contacts.CONTENT_URI, null,
+                ContactsContract.Contacts.DISPLAY_NAME + " LIKE ?",
+                new String[]{"%" + name + "%"}, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                String id = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Contacts._ID));
+                cursor.close();
+                Cursor phones = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
+                    ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + id, null, null);
+                if (phones != null && phones.moveToFirst()) {
+                    String number = phones.getString(
+                        phones.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                    phones.close();
+                    return number;
+                }
             }
-        }
+        } catch (Exception e) { e.printStackTrace(); }
         return null;
     }
 
     private void handleWhatsAppMessage(String cmd) {
-        String cleaned = cmd.replace("send whatsapp message to", "")
-                           .replace("whatsapp message to", "").trim();
-        String[] parts = cleaned.split(" ", 2);
-        if (parts.length >= 2) {
-            String contact = parts[0];
-            String message = parts[1];
-            String number = getContactNumber(contact);
-            if (number != null) {
-                number = number.replaceAll("[^0-9]", "");
-                Intent i = new Intent(Intent.ACTION_VIEW);
-                i.setData(Uri.parse("https://api.whatsapp.com/send?phone=" + number + "&text=" + Uri.encode(message)));
-                startActivity(i);
-                speak("Opening WhatsApp to message " + contact);
-            } else {
-                speak("Couldn't find " + contact + " in contacts.");
+        try {
+            String cleaned = cmd.replace("send whatsapp message to", "")
+                               .replace("whatsapp message to", "")
+                               .replace("send message to", "").trim();
+            String[] parts = cleaned.split(" ", 2);
+            if (parts.length >= 2) {
+                String contact = parts[0];
+                String message = parts[1];
+                String number = getContactNumber(contact);
+                if (number != null) {
+                    number = number.replaceAll("[^0-9+]", "");
+                    Intent i = new Intent(Intent.ACTION_VIEW,
+                        Uri.parse("https://api.whatsapp.com/send?phone=" + number + "&text=" + Uri.encode(message)));
+                    startActivity(i);
+                    respond("Opening WhatsApp to message " + contact + "!");
+                } else {
+                    respond("Couldn't find " + contact + " in your contacts.");
+                }
             }
+        } catch (Exception e) {
+            respond("Something went wrong with the message.");
         }
     }
 
     private void handleSMS(String cmd) {
-        String cleaned = cmd.replace("send message to", "").trim();
-        String[] parts = cleaned.split(" ", 2);
-        if (parts.length >= 2) {
-            String contact = parts[0];
-            String message = parts[1];
-            String number = getContactNumber(contact);
-            if (number != null) {
-                Intent i = new Intent(Intent.ACTION_SENDTO);
-                i.setData(Uri.parse("smsto:" + number));
-                i.putExtra("sms_body", message);
-                startActivity(i);
-                speak("Opening messages to " + contact);
-            } else {
-                speak("Couldn't find " + contact + " in contacts.");
+        try {
+            String cleaned = cmd.replace("send message to", "").trim();
+            String[] parts = cleaned.split(" ", 2);
+            if (parts.length >= 2) {
+                String contact = parts[0];
+                String message = parts[1];
+                String number = getContactNumber(contact);
+                if (number != null) {
+                    Intent i = new Intent(Intent.ACTION_SENDTO);
+                    i.setData(Uri.parse("smsto:" + number));
+                    i.putExtra("sms_body", message);
+                    startActivity(i);
+                    respond("Opening messages to " + contact + "!");
+                } else {
+                    respond("Couldn't find " + contact + " in your contacts.");
+                }
             }
+        } catch (Exception e) {
+            respond("Something went wrong with the message.");
         }
     }
 
     private void playOnSpotify(String song) {
         try {
             Intent i = new Intent(Intent.ACTION_VIEW);
-            i.setData(Uri.parse("spotify:search:" + song));
+            i.setData(Uri.parse("spotify:search:" + Uri.encode(song)));
             i.setPackage("com.spotify.music");
             startActivity(i);
-            speak("Playing " + song + " on Spotify.");
+            respond("Playing " + song + " on Spotify!");
         } catch (Exception e) {
-            openApp("com.spotify.music");
-            speak("Opening Spotify for you.");
+            openApp("com.spotify.music", "Spotify");
         }
     }
 
     private void startListening() {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
         intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
         speechRecognizer.startListening(intent);
-        tvStatus.setText("🎤 Listening...");
+        tvStatus.setText("Listening...");
     }
 
     private void stopListening() {
         speechRecognizer.stopListening();
-        btnMic.setText("🎤 Speak");
+        btnMic.setText("SPEAK");
         isListening = false;
         tvStatus.setText("Ready");
-    }
-
-    private void requestPermissions() {
-        ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSIONS_REQUEST);
     }
 
     @Override
