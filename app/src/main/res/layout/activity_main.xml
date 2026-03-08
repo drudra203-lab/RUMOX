@@ -3,46 +3,101 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center"
-    android:background="#0D0D0D"
-    android:padding="32dp">
+    android:gravity="center_horizontal"
+    android:background="#050A0E"
+    android:padding="24dp">
 
+    <!-- Title -->
     <TextView
         android:text="RUMOX"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="48sp"
+        android:textSize="42sp"
         android:textColor="#00E5FF"
         android:textStyle="bold"
-        android:layout_marginBottom="8dp"/>
+        android:letterSpacing="0.3"
+        android:layout_marginTop="20dp"/>
 
     <TextView
-        android:text="Voice Assistant"
+        android:text="Personal AI Assistant"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="16sp"
-        android:textColor="#888888"
-        android:layout_marginBottom="60dp"/>
+        android:textSize="13sp"
+        android:textColor="#4A6572"
+        android:letterSpacing="0.2"
+        android:layout_marginBottom="16dp"/>
 
+    <!-- Status -->
     <TextView
-        android:id="@+id/textResult"
+        android:id="@+id/tvStatus"
         android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:text="Tap the button and speak..."
-        android:textSize="20sp"
-        android:textColor="#FFFFFF"
+        android:layout_height="wrap_content"
+        android:text="● Ready"
+        android:textSize="13sp"
+        android:textColor="#00E5FF"
         android:gravity="center"
-        android:background="#1A1A1A"
-        android:padding="20dp"
-        android:layout_marginBottom="60dp"/>
+        android:background="#0A1A2A"
+        android:padding="8dp"
+        android:layout_marginBottom="16dp"/>
 
+    <!-- User Speech -->
+    <TextView
+        android:id="@+id/tvUserSpeech"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:text="You: Tap mic and speak..."
+        android:textSize="16sp"
+        android:textColor="#CCCCCC"
+        android:gravity="center"
+        android:background="#0D1F2D"
+        android:padding="12dp"
+        android:layout_marginBottom="12dp"/>
+
+    <!-- Assistant Response -->
+    <TextView
+        android:id="@+id/tvAssistantResponse"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:text="RUMOX: Initializing..."
+        android:textSize="16sp"
+        android:textColor="#00E5FF"
+        android:gravity="center"
+        android:background="#061A2A"
+        android:padding="12dp"
+        android:layout_marginBottom="24dp"/>
+
+    <!-- Mic Button -->
     <Button
-        android:id="@+id/btnSpeak"
-        android:layout_width="180dp"
-        android:layout_height="180dp"
-        android:text="Speak"
-        android:textSize="20sp"
-        android:textColor="#0D0D0D"
-        android:backgroundTint="#00E5FF"/>
+        android:id="@+id/btnMic"
+        android:layout_width="160dp"
+        android:layout_height="160dp"
+        android:text="🎤 Speak"
+        android:textSize="18sp"
+        android:textColor="#050A0E"
+        android:textStyle="bold"
+        android:backgroundTint="#00E5FF"
+        android:layout_marginBottom="20dp"/>
+
+    <!-- Always Listen Button -->
+    <Button
+        android:id="@+id/btnAlwaysListen"
+        android:layout_width="250dp"
+        android:layout_height="56dp"
+        android:text="👂 Always Listen"
+        android:textSize="16sp"
+        android:textColor="#050A0E"
+        android:textStyle="bold"
+        android:backgroundTint="#00E5FF"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Commands hint -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Say: Open WhatsApp • Call John • What time is it • Search for news"
+        android:textSize="11sp"
+        android:textColor="#4A6572"
+        android:gravity="center"
+        android:layout_marginTop="8dp"/>
 
 </LinearLayout>
