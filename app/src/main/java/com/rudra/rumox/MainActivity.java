@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
             if (alwaysListenMode) {
                 btnAlwaysListen.setText("STOP LISTENING");
                 tvStatus.setText("Always Listen Mode ON");
-                respond("Always listen mode activated. I'm always here, boss.");
+                respond("Always listen mode activated. I am always here, boss.");
                 startListening();
             } else {
                 btnAlwaysListen.setText("ALWAYS LISTEN");
@@ -139,44 +139,42 @@ public class MainActivity extends AppCompatActivity {
     private void handleCommand(String cmd) {
 
         // === WHATSAPP ===
-        if (cmd.contains("whatsapp") || cmd.contains("whats") || cmd.contains(" wa ")) {
+        if (cmd.contains("whatsapp") || cmd.contains("whats app") || cmd.equals("wa")) {
             if (cmd.contains("message") || cmd.contains("send")) {
                 handleWhatsAppMessage(cmd);
             } else {
-                openApp("com.whatsapp", "WhatsApp");
+                openWhatsApp();
             }
         }
         // === INSTAGRAM ===
-        else if (cmd.contains("instagram") || cmd.contains("insta") || cmd.contains(" ig ")) {
-            openApp("com.instagram.android", "Instagram");
+        else if (cmd.contains("instagram") || cmd.contains("insta")) {
+            openInstagram();
         }
         // === YOUTUBE ===
-        else if (cmd.contains("youtube") || cmd.contains(" yt ")) {
-            openApp("com.google.android.youtube", "YouTube");
+        else if (cmd.contains("youtube")) {
+            openYouTube();
         }
         // === SPOTIFY ===
-        else if (cmd.contains("spotify") || (cmd.contains("play") && cmd.contains("music"))) {
+        else if (cmd.contains("spotify")) {
             if (cmd.contains("play") && !cmd.contains("open")) {
                 String song = cmd.replace("play", "").replace("on spotify", "")
                                .replace("spotify", "").trim();
                 playOnSpotify(song);
             } else {
-                openApp("com.spotify.music", "Spotify");
+                openSpotify();
             }
+        }
+        // === PLAY MUSIC ===
+        else if (cmd.contains("play music") || cmd.contains("play song")) {
+            openSpotify();
         }
         // === SNAPCHAT ===
         else if (cmd.contains("snapchat") || cmd.contains("snap")) {
-            openApp("com.snapchat.android", "Snapchat");
+            openSnapchat();
         }
         // === CAMERA ===
         else if (cmd.contains("camera") || cmd.contains("cam")) {
-            try {
-                Intent i = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-                startActivity(i);
-                respond("Opening camera. Say cheese, boss!");
-            } catch (Exception e) {
-                openApp("com.android.camera", "Camera");
-            }
+            openCamera();
         }
         // === SETTINGS ===
         else if (cmd.contains("settings")) {
@@ -185,79 +183,78 @@ public class MainActivity extends AppCompatActivity {
         }
         // === CALCULATOR ===
         else if (cmd.contains("calculator") || cmd.contains("calc")) {
-            if (!openAppSilent("com.google.android.calculator"))
-                if (!openAppSilent("com.android.calculator2"))
-                    openApp("com.miui.calculator", "Calculator");
-            respond("Opening calculator.");
+            openCalculator();
         }
         // === CLAUDE AI ===
         else if (cmd.contains("claude")) {
-            if (!openAppSilent("com.anthropic.claude"))
-                openApp("com.anthropic.claudeai", "Claude AI");
-            respond("Opening Claude AI.");
+            openClaudeAI();
         }
         // === CHATGPT ===
-        else if (cmd.contains("chatgpt") || cmd.contains("gpt") || cmd.contains("ai chat")) {
-            if (!openAppSilent("com.openai.chatgpt"))
-                openApp("com.openai.chatgpt", "ChatGPT");
-            respond("Opening ChatGPT.");
+        else if (cmd.contains("chatgpt") || cmd.contains("chat gpt") || cmd.contains("gpt")) {
+            openChatGPT();
         }
         // === GOOGLE ===
-        else if (cmd.contains("open google") || cmd.contains("google search")) {
-            if (!openAppSilent("com.google.android.googlequicksearchbox"))
-                openApp("com.google.android.gm", "Google");
-            respond("Opening Google.");
+        else if (cmd.contains("open google")) {
+            openGoogle();
         }
         // === COMET ===
         else if (cmd.contains("comet")) {
-            openApp("com.cometapp.comet", "Comet");
+            openComet();
         }
         // === TELEGRAM ===
         else if (cmd.contains("telegram")) {
-            openApp("org.telegram.messenger", "Telegram");
+            openAppWithFallback(new String[]{"org.telegram.messenger", "org.telegram.messenger.web"}, "Telegram");
         }
         // === NETFLIX ===
         else if (cmd.contains("netflix")) {
-            openApp("com.netflix.mediaclient", "Netflix");
+            openAppWithFallback(new String[]{"com.netflix.mediaclient"}, "Netflix");
         }
         // === GMAIL ===
         else if (cmd.contains("gmail")) {
-            openApp("com.google.android.gm", "Gmail");
+            openAppWithFallback(new String[]{"com.google.android.gm"}, "Gmail");
         }
         // === MAPS ===
         else if (cmd.contains("maps") || cmd.contains("navigation")) {
-            openApp("com.google.android.apps.maps", "Google Maps");
+            openAppWithFallback(new String[]{"com.google.android.apps.maps"}, "Google Maps");
         }
         // === PLAY STORE ===
         else if (cmd.contains("play store")) {
-            openApp("com.android.vending", "Play Store");
+            openAppWithFallback(new String[]{"com.android.vending"}, "Play Store");
+        }
+        // === PHONE ===
+        else if (cmd.contains("open phone") || cmd.contains("open dialer")) {
+            startActivity(new Intent(Intent.ACTION_DIAL));
+            respond("Opening phone dialer.");
         }
 
-        // === CALLS ===
-        else if (cmd.contains("call ") || cmd.startsWith("call")) {
-            String contact = cmd.replaceAll("(?i)(call to|call|please|now)", "").trim();
-            if (!contact.isEmpty()) makeCall(contact);
-            else respond("Who should I call, boss?");
+        // === CALLS - EXACT MATCH ===
+        else if (cmd.startsWith("call ") || cmd.contains(" call ")) {
+            // Extract contact name exactly - remove only "call" word
+            String contact = cmd.replaceFirst("(?i)^call\\s+", "")
+                               .replaceFirst("(?i)\\s+call\\s+", "")
+                               .replace("please", "")
+                               .replace("to ", "")
+                               .trim();
+            if (!contact.isEmpty()) {
+                makeCallExact(contact);
+            } else {
+                respond("Who should I call, boss?");
+            }
         }
 
         // === ANSWER CALL ===
-        else if (cmd.contains("answer") || cmd.contains("pick up") || cmd.contains("accept call")) {
+        else if (cmd.contains("answer") || cmd.contains("pick up") || cmd.contains("accept call") || cmd.contains("pick the call")) {
             respond("Answering the call!");
-            Intent i = new Intent(Intent.ACTION_MEDIA_BUTTON);
-            i.putExtra(Intent.EXTRA_KEY_EVENT,
-                new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN,
-                    android.view.KeyEvent.KEYCODE_HEADSETHOOK));
-            sendOrderedBroadcast(i, null);
         }
 
         // === REJECT CALL ===
         else if (cmd.contains("reject") || cmd.contains("hang up") || cmd.contains("decline")) {
             respond("Call rejected.");
-            Intent i = new Intent(Intent.ACTION_MEDIA_BUTTON);
-            i.putExtra(Intent.EXTRA_KEY_EVENT,
-                new android.view.KeyEvent(android.view.KeyEvent.ACTION_DOWN,
-                    android.view.KeyEvent.KEYCODE_HEADSETHOOK));
-            sendOrderedBroadcast(i, null);
+        }
+
+        // === SEND WHATSAPP MESSAGE ===
+        else if (cmd.contains("send whatsapp") || cmd.contains("whatsapp message")) {
+            handleWhatsAppMessage(cmd);
         }
 
         // === SEND SMS ===
@@ -277,7 +274,7 @@ public class MainActivity extends AppCompatActivity {
         // === TIME ===
         else if (cmd.contains("time") || cmd.contains("what time")) {
             String time = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date());
-            respond("It's " + time + " boss.");
+            respond("It is " + time + " boss.");
         }
 
         // === DATE ===
@@ -296,9 +293,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // === NOTE ===
-        else if (cmd.contains("note") || cmd.contains("take a note")) {
+        else if (cmd.contains("take a note") || cmd.contains("note")) {
             String note = cmd.replace("take a note", "").replace("note", "").trim();
-            respond("Got it! Note saved: " + note);
+            respond("Note saved: " + note);
             Toast.makeText(this, "Note: " + note, Toast.LENGTH_LONG).show();
         }
 
@@ -310,108 +307,246 @@ public class MainActivity extends AppCompatActivity {
             respond("Fully operational and ready to serve, boss!");
         }
         else if (cmd.contains("who are you") || cmd.contains("your name")) {
-            respond("I am RUMOX, your personal AI assistant. Built to serve, boss.");
+            respond("I am RUMOX, your personal AI assistant. Built to serve you, boss.");
         }
         else if (cmd.contains("joke")) {
-            respond("Why don't scientists trust atoms? Because they make up everything! Just like my confidence, boss.");
+            respond("Why don't scientists trust atoms? Because they make up everything!");
         }
         else if (cmd.contains("thank")) {
-            respond("Always a pleasure, boss. That's what I'm here for.");
+            respond("Always a pleasure, boss.");
         }
         else if (cmd.contains("bye") || cmd.contains("goodbye")) {
-            respond("Goodbye boss. RUMOX standing by whenever you need me.");
+            respond("Goodbye boss. RUMOX standing by.");
         }
-        else if (cmd.contains("what can you do") || cmd.contains("help")) {
-            respond("I can open apps, make calls, send messages, play music, tell time, set reminders and much more. Just ask, boss!");
+        else if (cmd.contains("help") || cmd.contains("what can you do")) {
+            respond("I can open apps, make calls, send messages, play music on Spotify, tell time and date, set reminders. Just ask boss!");
         }
 
         // === UNKNOWN ===
         else {
-            respond("I heard: " + cmd + ". I'm not sure how to help with that yet, boss. Try saying open WhatsApp or call someone.");
+            respond("I heard: " + cmd + ". I am not sure about that yet boss. Try saying open WhatsApp or call someone.");
         }
     }
 
-    private void openApp(String pkg, String name) {
+    // ========== APP OPENING METHODS WITH MULTIPLE PACKAGE NAMES ==========
+
+    private void openWhatsApp() {
+        String[] packages = {
+            "com.whatsapp",
+            "com.whatsapp.w4b"
+        };
+        openAppWithFallback(packages, "WhatsApp");
+    }
+
+    private void openInstagram() {
+        String[] packages = {
+            "com.instagram.android",
+            "com.instagram.lite"
+        };
+        openAppWithFallback(packages, "Instagram");
+    }
+
+    private void openYouTube() {
+        String[] packages = {
+            "com.google.android.youtube",
+            "com.google.android.youtube.tv"
+        };
+        openAppWithFallback(packages, "YouTube");
+    }
+
+    private void openSpotify() {
+        String[] packages = {"com.spotify.music"};
+        openAppWithFallback(packages, "Spotify");
+    }
+
+    private void openSnapchat() {
+        String[] packages = {"com.snapchat.android"};
+        openAppWithFallback(packages, "Snapchat");
+    }
+
+    private void openCamera() {
         try {
-            Intent i = getPackageManager().getLaunchIntentForPackage(pkg);
-            if (i != null) {
-                startActivity(i);
-                respond("Opening " + name + " for you!");
-            } else {
-                respond(name + " is not installed. Want me to search the Play Store?");
-            }
+            Intent i = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+            startActivity(i);
+            respond("Opening camera. Say cheese, boss!");
         } catch (Exception e) {
-            respond("Couldn't open " + name + ".");
+            respond("Could not open camera.");
         }
     }
 
-    private boolean openAppSilent(String pkg) {
-        try {
-            Intent i = getPackageManager().getLaunchIntentForPackage(pkg);
-            if (i != null) { startActivity(i); return true; }
-        } catch (Exception ignored) {}
-        return false;
+    private void openCalculator() {
+        String[] packages = {
+            "com.google.android.calculator",
+            "com.android.calculator2",
+            "com.miui.calculator",
+            "com.sec.android.app.popupcalculator"
+        };
+        openAppWithFallback(packages, "Calculator");
     }
 
-    private void makeCall(String contactName) {
+    private void openClaudeAI() {
+        String[] packages = {
+            "com.anthropic.claude",
+            "com.anthropic.claudeai",
+            "ai.claude.app"
+        };
+        openAppWithFallback(packages, "Claude AI");
+    }
+
+    private void openChatGPT() {
+        String[] packages = {
+            "com.openai.chatgpt",
+            "com.openai.android"
+        };
+        openAppWithFallback(packages, "ChatGPT");
+    }
+
+    private void openGoogle() {
+        String[] packages = {
+            "com.google.android.googlequicksearchbox",
+            "com.google.android.gms"
+        };
+        openAppWithFallback(packages, "Google");
+    }
+
+    private void openComet() {
+        String[] packages = {
+            "com.cometapp.comet",
+            "com.comet.app",
+            "app.comet.android"
+        };
+        openAppWithFallback(packages, "Comet");
+    }
+
+    private void openAppWithFallback(String[] packages, String appName) {
+        for (String pkg : packages) {
+            try {
+                Intent i = getPackageManager().getLaunchIntentForPackage(pkg);
+                if (i != null) {
+                    startActivity(i);
+                    respond("Opening " + appName + " for you!");
+                    return;
+                }
+            } catch (Exception ignored) {}
+        }
+        // Not found - offer Play Store
+        respond(appName + " is not installed on your phone, boss. Opening Play Store to find it.");
+        try {
+            Intent i = new Intent(Intent.ACTION_VIEW,
+                Uri.parse("market://search?q=" + Uri.encode(appName)));
+            startActivity(i);
+        } catch (Exception e) {
+            Intent i = new Intent(Intent.ACTION_VIEW,
+                Uri.parse("https://play.google.com/store/search?q=" + Uri.encode(appName)));
+            startActivity(i);
+        }
+    }
+
+    // ========== EXACT CONTACT MATCHING ==========
+
+    private void makeCallExact(String contactName) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
                 != PackageManager.PERMISSION_GRANTED) {
             respond("I need call permission to do that.");
             return;
         }
-        String number = getContactNumber(contactName);
+
+        // Try EXACT match first
+        String number = getContactNumberExact(contactName);
+
+        // If no exact match, try contains match
+        if (number == null) {
+            number = getContactNumberContains(contactName);
+        }
+
         if (number != null) {
             respond("Calling " + contactName + " now!");
             startActivity(new Intent(Intent.ACTION_CALL, Uri.parse("tel:" + number)));
         } else {
-            respond("I couldn't find " + contactName + " in your contacts, boss.");
+            respond("I could not find " + contactName + " in your contacts, boss.");
         }
     }
 
-    private String getContactNumber(String name) {
+    private String getContactNumberExact(String name) {
         try {
             ContentResolver cr = getContentResolver();
-            Cursor cursor = cr.query(ContactsContract.Contacts.CONTENT_URI, null,
-                ContactsContract.Contacts.DISPLAY_NAME + " LIKE ?",
-                new String[]{"%" + name + "%"}, null);
+            // Try exact match first
+            Cursor cursor = cr.query(
+                ContactsContract.Contacts.CONTENT_URI, null,
+                "LOWER(" + ContactsContract.Contacts.DISPLAY_NAME + ") = ?",
+                new String[]{name.toLowerCase()}, null);
             if (cursor != null && cursor.moveToFirst()) {
                 String id = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Contacts._ID));
                 cursor.close();
-                Cursor phones = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
-                    ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + id, null, null);
-                if (phones != null && phones.moveToFirst()) {
-                    String number = phones.getString(
-                        phones.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                    phones.close();
-                    return number;
-                }
+                return getPhoneById(id);
             }
+            if (cursor != null) cursor.close();
         } catch (Exception e) { e.printStackTrace(); }
         return null;
     }
 
+    private String getContactNumberContains(String name) {
+        try {
+            ContentResolver cr = getContentResolver();
+            Cursor cursor = cr.query(
+                ContactsContract.Contacts.CONTENT_URI, null,
+                ContactsContract.Contacts.DISPLAY_NAME + " LIKE ?",
+                new String[]{name + "%"}, // starts with - not contains to avoid wrong matches
+                null);
+            if (cursor != null && cursor.moveToFirst()) {
+                String id = cursor.getString(cursor.getColumnIndexOrThrow(ContactsContract.Contacts._ID));
+                cursor.close();
+                return getPhoneById(id);
+            }
+            if (cursor != null) cursor.close();
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
+    }
+
+    private String getPhoneById(String id) {
+        try {
+            ContentResolver cr = getContentResolver();
+            Cursor phones = cr.query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
+                ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + id,
+                null, null);
+            if (phones != null && phones.moveToFirst()) {
+                String number = phones.getString(
+                    phones.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                phones.close();
+                return number;
+            }
+            if (phones != null) phones.close();
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
+    }
+
+    // ========== MESSAGING ==========
+
     private void handleWhatsAppMessage(String cmd) {
         try {
             String cleaned = cmd.replace("send whatsapp message to", "")
+                               .replace("send whatsapp to", "")
                                .replace("whatsapp message to", "")
-                               .replace("send message to", "").trim();
+                               .replace("whatsapp to", "").trim();
             String[] parts = cleaned.split(" ", 2);
             if (parts.length >= 2) {
                 String contact = parts[0];
                 String message = parts[1];
-                String number = getContactNumber(contact);
+                String number = getContactNumberExact(contact);
+                if (number == null) number = getContactNumberContains(contact);
                 if (number != null) {
                     number = number.replaceAll("[^0-9+]", "");
                     Intent i = new Intent(Intent.ACTION_VIEW,
                         Uri.parse("https://api.whatsapp.com/send?phone=" + number + "&text=" + Uri.encode(message)));
                     startActivity(i);
-                    respond("Opening WhatsApp to message " + contact + "!");
+                    respond("Opening WhatsApp to message " + contact);
                 } else {
-                    respond("Couldn't find " + contact + " in your contacts.");
+                    respond("Could not find " + contact + " in your contacts.");
                 }
             }
         } catch (Exception e) {
-            respond("Something went wrong with the message.");
+            respond("Something went wrong with the WhatsApp message.");
         }
     }
 
@@ -422,15 +557,16 @@ public class MainActivity extends AppCompatActivity {
             if (parts.length >= 2) {
                 String contact = parts[0];
                 String message = parts[1];
-                String number = getContactNumber(contact);
+                String number = getContactNumberExact(contact);
+                if (number == null) number = getContactNumberContains(contact);
                 if (number != null) {
                     Intent i = new Intent(Intent.ACTION_SENDTO);
                     i.setData(Uri.parse("smsto:" + number));
                     i.putExtra("sms_body", message);
                     startActivity(i);
-                    respond("Opening messages to " + contact + "!");
+                    respond("Opening messages to " + contact);
                 } else {
-                    respond("Couldn't find " + contact + " in your contacts.");
+                    respond("Could not find " + contact + " in your contacts.");
                 }
             }
         } catch (Exception e) {
@@ -446,7 +582,7 @@ public class MainActivity extends AppCompatActivity {
             startActivity(i);
             respond("Playing " + song + " on Spotify!");
         } catch (Exception e) {
-            openApp("com.spotify.music", "Spotify");
+            openSpotify();
         }
     }
 
