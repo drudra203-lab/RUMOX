@@ -7,7 +7,6 @@
     android:background="#050A0E"
     android:padding="24dp">
 
-    <!-- Title -->
     <TextView
         android:text="RUMOX"
         android:layout_width="wrap_content"
@@ -24,15 +23,13 @@
         android:layout_height="wrap_content"
         android:textSize="13sp"
         android:textColor="#4A6572"
-        android:letterSpacing="0.2"
         android:layout_marginBottom="16dp"/>
 
-    <!-- Status -->
     <TextView
         android:id="@+id/tvStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="● Ready"
+        android:text="Ready"
         android:textSize="13sp"
         android:textColor="#00E5FF"
         android:gravity="center"
@@ -40,7 +37,6 @@
         android:padding="8dp"
         android:layout_marginBottom="16dp"/>
 
-    <!-- User Speech -->
     <TextView
         android:id="@+id/tvUserSpeech"
         android:layout_width="match_parent"
@@ -53,7 +49,6 @@
         android:padding="12dp"
         android:layout_marginBottom="12dp"/>
 
-    <!-- Assistant Response -->
     <TextView
         android:id="@+id/tvAssistantResponse"
         android:layout_width="match_parent"
@@ -66,38 +61,25 @@
         android:padding="12dp"
         android:layout_marginBottom="24dp"/>
 
-    <!-- Mic Button -->
     <Button
         android:id="@+id/btnMic"
         android:layout_width="160dp"
         android:layout_height="160dp"
-        android:text="🎤 Speak"
+        android:text="SPEAK"
         android:textSize="18sp"
         android:textColor="#050A0E"
         android:textStyle="bold"
         android:backgroundTint="#00E5FF"
         android:layout_marginBottom="20dp"/>
 
-    <!-- Always Listen Button -->
     <Button
         android:id="@+id/btnAlwaysListen"
         android:layout_width="250dp"
         android:layout_height="56dp"
-        android:text="👂 Always Listen"
+        android:text="ALWAYS LISTEN"
         android:textSize="16sp"
         android:textColor="#050A0E"
         android:textStyle="bold"
-        android:backgroundTint="#00E5FF"
-        android:layout_marginBottom="16dp"/>
-
-    <!-- Commands hint -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Say: Open WhatsApp • Call John • What time is it • Search for news"
-        android:textSize="11sp"
-        android:textColor="#4A6572"
-        android:gravity="center"
-        android:layout_marginTop="8dp"/>
+        android:backgroundTint="#00E5FF"/>
 
 </LinearLayout>
